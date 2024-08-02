@@ -1,0 +1,24 @@
+name: Run hello.py on Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  run_hello:
+    name: Run Hello Script
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/hello')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run hello.py
+        run: |
+          python hello.py
