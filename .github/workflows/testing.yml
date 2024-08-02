@@ -7,18 +7,26 @@ on:
 jobs:
   run_hello:
     name: Run Hello Script
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/hello')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debugging Info
+        run: |
+          echo "Triggered by comment: '${{ github.event.comment.body }}'"
+          echo "Is this a PR? ${{ github.event.issue.pull_request }}"
+          echo "Contains '/hello'? ${{ contains(github.event.comment.body, '/hello') }}"
+
       - name: Checkout repository
+        if: github.event.issue.pull_request && contains(github.event.comment.body, '/hello')
         uses: actions/checkout@v3
 
       - name: Set up Python environment
+        if: github.event.issue.pull_request && contains(github.event.comment.body, '/hello')
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Run hello.py
+        if: github.event.issue.pull_request && contains(github.event.comment.body, '/hello')
         run: |
           python hello.py
