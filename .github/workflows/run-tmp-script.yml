@@ -1,0 +1,65 @@
+name: Run tmp.py Script
+
+on:
+  workflow_run:
+    workflows: ["Compute Sum of Random Numbers"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  run-tmp-script:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for change detection
+    
+    - name: Check for changes in Code directory
+      id: check-changes
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "Manual trigger - running script"
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          # Get the commit SHA from the triggering workflow
+          TRIGGER_SHA=${{ github.event.workflow_run.head_sha }}
+          
+          # Check if there are changes in Code directory
+          CHANGES=$(git diff --name-only HEAD~1 HEAD | grep "^Code/" || true)
+          
+          if [ -n "$CHANGES" ]; then
+            echo "Changes detected in Code directory:"
+            echo "$CHANGES"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes in Code directory"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
+    - name: Set up Python
+      if: steps.check-changes.outputs.changes == 'true'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy pandas matplotlib seaborn
+    
+    - name: Run tmp.py script
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        cd Code
+        python tmp.py
+    
+    - name: Skip execution
+      if: steps.check-changes.outputs.changes == 'false'
+      run: |
+        echo "Skipping tmp.py execution - no changes in Code directory" 
